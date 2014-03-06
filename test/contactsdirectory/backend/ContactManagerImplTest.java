@@ -47,9 +47,41 @@ public class ContactManagerImplTest {
     // public void hello() {}
     
     @Test
-    public void createContact() {
-        Contact contact = newContact(ContactType.MAIL, "", "test@java.com");
+    public void createContact()
+    {
+        try
+        {
+            manager.createContact(null);
+            fail();
+        }
+        catch(NullPointerException e)
+        {
+            //OK
+        }
         
+        Contact contact = newContact(null, "note", "test@java.com");        
+        try
+        {
+            manager.createContact(contact);
+            fail();
+        }
+        catch(IllegalArgumentException e)
+        {
+            //OK
+        }                
+        
+        contact = newContact(ContactType.MAIL, "note", null);        
+        try
+        {
+            manager.createContact(contact);
+            fail();
+        }
+        catch(IllegalArgumentException e)
+        {
+            //OK
+        }
+        
+        contact = newContact(ContactType.MAIL, "note", "test@java.com");
         manager.createContact(contact);
         
         Long contactId = contact.getId();
@@ -58,7 +90,7 @@ public class ContactManagerImplTest {
         assertEquals(contact, result);
         assertNotSame(contact, result);
         assertDeepEquals(contact, result);
-    }
+    }    
     
     private static Contact newContact(ContactType type, String note, String data)
     {
@@ -83,7 +115,8 @@ public class ContactManagerImplTest {
         return contact;
     }
 
-    private void assertDeepEquals(Contact expected, Contact actual) {
+    private void assertDeepEquals(Contact expected, Contact actual) 
+    {
         assertEquals(expected.getId(), actual.getId());
         assertEquals(expected.getType(), actual.getType());
         assertEquals(expected.getNote(), actual.getNote());
