@@ -6,7 +6,6 @@ package contactsdirectory.backend;
 
 //import static contactsdirectory.backend.ContactType.MAIL;
 //import static contactsdirectory.backend.ContactType.PHONE;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,6 +25,9 @@ public class DirectoryManagerImplTest {
     
     DirectoryManagerImpl manager;
     
+    ContactManager contactManager;
+    PersonManager personManager;
+    
     public DirectoryManagerImplTest() {
     }
     
@@ -39,7 +41,9 @@ public class DirectoryManagerImplTest {
     
     @Before
     public void setUp() {
-          manager = new DirectoryManagerImpl();      
+          manager = new DirectoryManagerImpl();   
+          contactManager = new ContactManagerImpl();
+          personManager = new PersonManagerImpl();
     }
     
     @After
@@ -53,32 +57,10 @@ public class DirectoryManagerImplTest {
     
     @Test
     public void addContactToPerson()
-    {                       
-        try
-        {
-            manager.addContactToPerson(null, new MailContact());
-            fail();
-        }
-        catch(NullPointerException e)
-        {
-            //OK
-        }
-        
-        try
-        {
-            manager.addContactToPerson(new Person(), null);
-            fail();
-        }
-        catch(NullPointerException e)
-        {
-            //OK
-        }        
-        
-        ContactManager contactManager = new ContactManagerImpl();
-        PersonManager personManager = new PersonManagerImpl();
-        
-        Contact contact = newContact(ContactType.MAIL,"note","test@test.com");
-        Person person = newPerson("jmeno", "prijmeni");
+    {                                                     
+        Contact contact = new ContactBuilder().setType(ContactType.MAIL)
+                .setNote("note").setData("test@test.com").build();//newContact(ContactType.MAIL,"note","test@test.com");
+        Person person = new PersonBuilder().setName("name").setSurname("surname").build();//newPerson("jmeno", "prijmeni");
         
         contactManager.createContact(contact);
         personManager.createPerson(person);
@@ -91,26 +73,24 @@ public class DirectoryManagerImplTest {
         assertEquals(contact, result.get(0));
     }
     
+    @Test(expected = IllegalArgumentException.class)
+    public void addContactToPersonWithNullArguments()
+    {
+        manager.addContactToPerson(null, new MailContact());
+        
+        manager.addContactToPerson(new Person(), null);        
+    }
+    
     @Test
     public void findAllContactsOfPerson()
-    {
-        try
-        {
-            manager.findAllContactsOfPerson(null);
-            fail();
-        }
-        catch(NullPointerException e)
-        {
-            //OK
-        }
-        
-        ContactManager contactManager = new ContactManagerImpl();
-        PersonManager personManager = new PersonManagerImpl();
-        
-        Contact contact = newContact(ContactType.MAIL,"note","test@test.com");
-        Contact contact2 = newContact(ContactType.PHONE,"note2","+420721532247");
-        Contact contact3 = newContact(ContactType.PHONE,null,"+420721532222");
-        Person person = newPerson("testName", "testSurname");
+    {               
+        Contact contact = new ContactBuilder().setType(ContactType.MAIL)
+                .setNote("note").setData("test@test.com").build();//newContact(ContactType.MAIL,"note","test@test.com");
+        Contact contact2 = new ContactBuilder().setType(ContactType.PHONE)
+                .setNote("note2").setData("+420721532247").build();//newContact(ContactType.PHONE,"note2","+420721532247");
+        Contact contact3 = new ContactBuilder().setType(ContactType.PHONE)
+                .setData("+420721532222").build();//newContact(ContactType.PHONE,null,"+420721532222");
+        Person person = new PersonBuilder().setName("name").setSurname("surname").build();//newPerson("testName", "testSurname");
         
         personManager.createPerson(person);
         contactManager.createContact(contact);
@@ -131,6 +111,36 @@ public class DirectoryManagerImplTest {
         
         assertEquals(expected, result);
         assertDeepEquals(expected, result);
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void findAllContactsOfPersonWithNullArguments()
+    {
+        manager.findAllContactsOfPerson(null);
+    }
+    
+    @Test
+    public void removeContactFromPerson()
+    {      
+        Contact contact = new ContactBuilder().setType(ContactType.MAIL)
+                .setNote("note").setData("test@test.com").build();//newContact(ContactType.MAIL,"note","test@test.com");
+        Person person = new PersonBuilder().setName("name").setSurname("surname").build();//newPerson("jmeno", "prijmeni");
+        
+        personManager.createPerson(person);
+        contactManager.createContact(contact);
+        
+        manager.addContactToPerson(person, contact);
+        manager.removeContactFromPerson(person, contact);
+        
+        List<Contact> result = manager.findAllContactsOfPerson(person);
+        assertTrue(result.isEmpty());
+    }
+    
+    @Test(expected = IllegalArgumentException.class)
+    public void removeContactFromPersonWithNullArguments()
+    {
+        manager.addContactToPerson(null, new MailContact());
+        manager.addContactToPerson(new Person(), null);        
     }
     
     private static Contact newContact(ContactType type, String note, String data)
@@ -164,7 +174,7 @@ public class DirectoryManagerImplTest {
         person.setLastName(lastName);
         
         return person;
-    }
+    }        
     
     private static Comparator<Contact> contactIdComparator = new Comparator<Contact>() 
     {

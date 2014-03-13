@@ -11,22 +11,26 @@ package contactsdirectory.backend;
 public class ContactManagerImpl implements ContactManager{
 
     @Override
-    public Contact createContact(Contact contact) {
+    public Contact createContact(Contact contact) throws IllegalArgumentException
+    {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public void editContact(Contact contact) {
+    public void editContact(Contact contact) throws IllegalArgumentException
+    {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public void removeContact(Contact contact) {
+    public void removeContact(Contact contact) throws IllegalArgumentException
+    {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Contact findContactById(Long id) {
+    public Contact findContactById(Long id) throws IllegalArgumentException
+    {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }        
 }
