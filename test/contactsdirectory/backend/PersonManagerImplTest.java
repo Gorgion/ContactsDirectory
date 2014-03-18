@@ -35,7 +35,8 @@ public class PersonManagerImplTest {
     
     @Test
     public void createPerson() {
-        Person person = newPerson("Fero", "Mrkvicka");
+        Person person = new PersonBuilder().setName("Fero").setSurname("Mrkvicka").build();
+                //newPerson("Fero", "Mrkvicka");
         manager.createPerson(person);
 
         Long personId = person.getId();
@@ -55,8 +56,10 @@ public class PersonManagerImplTest {
     @Test
     public void removePerson() 
     {
-        Person p1 = newPerson("Fero", "Mrkvicka");
-        Person p2 = newPerson("Jozo", "Tekvicka");
+        Person p1 = new PersonBuilder().setName("Fero").setSurname("Mrkvicka").build();
+                //newPerson("Fero", "Mrkvicka");
+        Person p2 = new PersonBuilder().setName("Jozo").setSurname("Tekvicka").build();
+                //newPerson("Jozo", "Tekvicka");
         manager.createPerson(p1);
         manager.createPerson(p2);
         
@@ -92,7 +95,7 @@ public class PersonManagerImplTest {
 
 class PersonBuilder
 {
-    private Person person;
+    private final Person person;
     
     public PersonBuilder()
     {
