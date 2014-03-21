@@ -82,7 +82,7 @@ public class ContactManagerImplTest
         conn.close();               
     }
     
-    @Ignore @Test
+    @Test
     public void createMailContact()
     {               
         Contact contact = new ContactBuilder().setData("test@java.com")
@@ -134,7 +134,7 @@ public class ContactManagerImplTest
         Long contactId = contact.getId();        
         
         contact.setNote("anotherNote");
-        ((MailContact)contact).setMailAddress("test2@java.com");
+        //((MailContact)contact).setMailAddress("test2@java.com");
         
         manager.editContact(contact);
         
@@ -174,7 +174,7 @@ public class ContactManagerImplTest
         manager.editContact(contact);
     }
     
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalEntityException.class)
     public void editContactWithIllegalTypeChange()
     {
         Contact contact = new ContactBuilder().setData("test@java.com")
@@ -242,7 +242,7 @@ public class ContactManagerImplTest
         assertNull(result);
     }       
     
-    private static Contact newContact(ContactType type, String note, String data)
+    /*private static Contact newContact(ContactType type, String note, String data)
     {
         Contact contact = null;
         
@@ -263,7 +263,7 @@ public class ContactManagerImplTest
         }
         
         return contact;
-    }
+    }*/
 
     private static void assertDeepEquals(Contact expected, Contact actual) 
     {
