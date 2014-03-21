@@ -78,6 +78,7 @@ public class ContactManagerImpl implements ContactManager
                             Statement.RETURN_GENERATED_KEYS);
                     st2.setLong(1, id);
                     st2.setString(2, ((PhoneContact) contact).getPhoneNumber());
+                        System.out.println("contact.getType()");///////
                     break;
             }
             addedRows = st2.executeUpdate();
@@ -213,6 +214,8 @@ public class ContactManagerImpl implements ContactManager
     @Override
     public Contact getContact(Long id) throws IllegalArgumentException
     {
+        validate(id);
+
         PreparedStatement st = null;
         PreparedStatement st2 = null;
         Contact contact = null;
@@ -242,9 +245,10 @@ public class ContactManagerImpl implements ContactManager
 
                 if (rsType.next())
                 {
-                    System.out.println("testType");
                     contact = resultSetToContact(rsContact, rsType);
 
+                    System.out.println(contact.getType());////////
+                        
                     if (rsType.next())
                     {
                         throw new ServiceFailureException(
@@ -330,11 +334,24 @@ public class ContactManagerImpl implements ContactManager
             case PHONE:
                 contact = new MailContact();
                 contact.setType(ContactType.MAIL);
-                ((PhoneContact) contact).setPhoneNumber(rsType.getString("phonenumber"));
+                //((PhoneContact) contact).setPhoneNumber(rsType.getString("phonenumber"));
                 break;
         }
         contact.setId(rsContact.getLong("id"));
         contact.setNote(rsContact.getString("note"));
         return contact;
+    }
+
+    private void validate(Long id)
+    {
+        if (id == null)
+        {
+            throw new IllegalArgumentException("contact id is null");
+        }
+
+        if (id <= 0)
+        {
+            throw new IllegalArgumentException("contact id is out of range");
+        }
     }
 }

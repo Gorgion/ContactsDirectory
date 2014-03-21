@@ -83,7 +83,7 @@ public class ContactManagerImplTest
         conn.close();               
     }
     
-    @Test
+    @Ignore @Test
     public void createMailContact()
     {               
         Contact contact = new ContactBuilder().setData("test@java.com")
@@ -228,13 +228,13 @@ public class ContactManagerImplTest
         assertDeepEquals(contact, result);
     }
     
-    @Ignore @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void findContactByIdWithNullArguments()
     {
         manager.getContact(null);
     }
     
-    @Ignore @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void findContactByIdWithOutOfRangeArguments()
     {        
         Contact result = manager.getContact(Long.MIN_VALUE);
