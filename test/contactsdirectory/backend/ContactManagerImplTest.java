@@ -43,6 +43,7 @@ public class ContactManagerImplTest
     {        
         //conn = DriverManager.getConnection("jdbc:derby://localhost:1527/ContactManagerTest;create=true","","app");
         conn = DriverManager.getConnection("jdbc:derby:memory:ContactManagerTest;create=true");
+        //conn = DriverManager.getConnection("jdbc:derby:memory:GraveManagerTest;create=true");
         
         conn.prepareStatement("CREATE TABLE PERSON (" +
             "ID BIGINT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, " +
@@ -57,17 +58,17 @@ public class ContactManagerImplTest
             "NOTE VARCHAR(255) " +
             ")").executeUpdate();
         
-        /*conn.prepareStatement("CREATE TABLE MAILCONTACT (" +
+        conn.prepareStatement("CREATE TABLE MAILCONTACT (" +
             "CONTACTID BIGINT NOT NULL REFERENCES CONTACT (ID), " +
             "MAILADDRESS VARCHAR(70), " +
             "PRIMARY KEY(CONTACTID, MAILADDRESS)" +
             ")").executeUpdate();
         
-        /*conn.prepareStatement("CREATE TABLE PHONECONTACT (" +
+        conn.prepareStatement("CREATE TABLE PHONECONTACT (" +
             "CONTACTID BIGINT NOT NULL REFERENCES CONTACT (ID), " +
             "PHONENUMBER VARCHAR(20), " +
             "PRIMARY KEY(CONTACTID, PHONENUMBER)" +
-            ")").executeUpdate();*/
+            ")").executeUpdate();
         
         manager = new ContactManagerImpl(conn);
     }    
@@ -75,10 +76,10 @@ public class ContactManagerImplTest
     @After
     public void tearDown() throws SQLException 
     {   
-        //conn.prepareStatement("DROP TABLE PHONECONTACT").executeUpdate();
-//        conn.prepareStatement("DROP TABLE MAILCONTACT").executeUpdate();
-        //conn.prepareStatement("DROP TABLE contact").executeUpdate();
-        //conn.prepareStatement("DROP TABLE person").executeUpdate();
+        conn.prepareStatement("DROP TABLE PHONECONTACT").executeUpdate();
+        conn.prepareStatement("DROP TABLE MAILCONTACT").executeUpdate();
+        conn.prepareStatement("DROP TABLE contact").executeUpdate();
+        conn.prepareStatement("DROP TABLE person").executeUpdate();
         conn.close();               
     }
     
@@ -92,12 +93,12 @@ public class ContactManagerImplTest
         Long contactId = contact.getId();
         assertNotNull(contactId);
         Contact result = manager.getContact(contactId);
-        /*assertEquals(contact, result);
+        assertEquals(contact, result);
         assertNotSame(contact, result);
-        assertDeepEquals(contact, result);*/
+        assertDeepEquals(contact, result);
     }    
     
-    @Ignore @Test
+    @Test
     public void createPhoneContact()
     {               
         Contact contact = new ContactBuilder().setData("911")
@@ -112,7 +113,7 @@ public class ContactManagerImplTest
         assertDeepEquals(contact, result);
     }
     
-    @Ignore @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void createContactWithNullArguments()
     {        
         manager.createContact(null);
