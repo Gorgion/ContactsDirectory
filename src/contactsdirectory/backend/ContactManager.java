@@ -9,8 +9,8 @@ package contactsdirectory.backend;
  * @author Tomáš
  */
 public interface ContactManager {
-    Contact createContact(Contact contact);
+    void createContact(Contact contact);
     void editContact(Contact contact);
     void removeContact(Contact contact);
-    Contact findContactById(Long id);
+    Contact getContact(Long id);
 }
