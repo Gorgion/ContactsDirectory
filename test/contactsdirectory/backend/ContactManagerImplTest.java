@@ -43,7 +43,6 @@ public class ContactManagerImplTest
     {        
         //conn = DriverManager.getConnection("jdbc:derby://localhost:1527/ContactManagerTest;create=true","","app");
         conn = DriverManager.getConnection("jdbc:derby:memory:ContactManagerTest;create=true");
-        //conn = DriverManager.getConnection("jdbc:derby:memory:GraveManagerTest;create=true");
         
         conn.prepareStatement("CREATE TABLE PERSON (" +
             "ID BIGINT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY, " +
@@ -125,7 +124,7 @@ public class ContactManagerImplTest
         manager.createContact(contact);            
     }
     
-    @Ignore @Test
+    @Test
     public void editContact()
     {
         Contact contact = new ContactBuilder().setData("test@java.com")
@@ -145,7 +144,7 @@ public class ContactManagerImplTest
         assertDeepEquals(contact, result);
     }
     
-    @Ignore @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void editContactWithNullArguments()            
     {
         manager.editContact(null);        
@@ -175,7 +174,7 @@ public class ContactManagerImplTest
         manager.editContact(contact);
     }
     
-    @Ignore @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void editContactWithIllegalTypeChange()
     {
         Contact contact = new ContactBuilder().setData("test@java.com")
@@ -191,7 +190,6 @@ public class ContactManagerImplTest
         manager.editContact(contact);
     }        
     
-    @Ignore
     @Test
     public void removeContact()
     {
@@ -207,13 +205,13 @@ public class ContactManagerImplTest
         assertNull(result);
     }
     
-    @Ignore @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void removeContactWithNullArguments()
     {                
         manager.removeContact(null);
     }
     
-    @Ignore @Test
+    @Test
     public void findContactById()
     {
         Contact contact = new ContactBuilder().setType(ContactType.MAIL)
