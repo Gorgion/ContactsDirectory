@@ -20,8 +20,7 @@ import javax.sql.DataSource;
 public class ContactManagerImpl implements ContactManager
 {
 
-    private static final Logger logger = Logger.getLogger(
-            ContactManagerImpl.class.getName());
+    private static final Logger logger = Logger.getLogger(ContactManagerImpl.class.getName());
 
     private Connection conn;
 
@@ -34,7 +33,7 @@ public class ContactManagerImpl implements ContactManager
     public void createContact(Contact contact) throws IllegalArgumentException
     {
         //checkDataSource();
-        validate(contact);
+        validateContact(contact);
 
         if (contact.getId() != null)
         {
@@ -78,7 +77,6 @@ public class ContactManagerImpl implements ContactManager
                             Statement.RETURN_GENERATED_KEYS);
                     st2.setLong(1, id);
                     st2.setString(2, ((PhoneContact) contact).getPhoneNumber());
-                        System.out.println("contact.getType()");///////
                     break;
             }
             addedRows = st2.executeUpdate();
@@ -140,81 +138,95 @@ public class ContactManagerImpl implements ContactManager
     public void editContact(Contact contact) throws IllegalArgumentException
     {
         //checkDataSource();
-        validate(contact);
+        validateContact(contact);
         if (contact.getId() == null)
         {
-            //throw new IllegalEntityException("contact id is null");
+            throw new IllegalEntityException("contact id is null");
         }
-        Connection conn = null;
-        PreparedStatement st = null;
+
         try
         {
             //conn = dataSource.getConnection();
 
-            conn.setAutoCommit(false);
-
-            st = conn.prepareStatement(
-                    "UPDATE Contact SET type = ?,  note = ? WHERE id = ?");
-            st.setInt(1, DBUtilities.contactTypeToInt(contact.getType()));
-            st.setString(4, contact.getNote());
-            st.setLong(5, contact.getId());
-
-            int addedRows = st.executeUpdate();
-            if (addedRows != 1)
+            //conn.setAutoCommit(false);
+            try (PreparedStatement st = conn.prepareStatement("SELECT type FROM contact WHERE id = ?"))
             {
-                throw new ServiceFailureException("Internal Error: More rows "
-                        + "inserted when trying to insert grave " + contact);
-            }
+                st.setLong(1, contact.getId());
+                try (ResultSet rs = st.executeQuery())
+                {
+                    if (rs.next())
+                    {
+                        ContactType storedType = DBUtilities.intToContactType(rs.getInt("type"));
 
-            conn.commit();
+                        if (storedType != contact.getType())
+                        {
+                            throw new IllegalEntityException("contact type cannot be changed, only note can be changed");
+                        }
+
+                        if (rs.next())
+                        {
+                            throw new ServiceFailureException(
+                                    "Internal error: More entities with the same id found " + contact.getId());
+                        }
+                    }
+                }
+            }
+            try (PreparedStatement st = conn.prepareStatement("UPDATE contact SET note = ? WHERE id = ?"))
+            {
+                st.setString(1, contact.getNote());
+                st.setLong(2, contact.getId());
+
+                int updated = st.executeUpdate();
+                if (updated != 1)
+                {
+                    throw new ServiceFailureException("Internal Error: More rows "
+                            + "inserted when trying to insert grave " + contact);
+                }
+            }
+            //conn.commit();
         } catch (SQLException ex)
         {
             String msg = "Error when updating contact in the db";
             logger.log(Level.SEVERE, msg, ex);
             throw new ServiceFailureException(msg, ex);
-        } finally
-        {
-            if (st != null)
-            {
-                try
-                {
-                    st.close();
-                } catch (SQLException ex)
-                {
-                    logger.log(Level.SEVERE, null, ex);
-                }
-            }
-
-            if (conn != null)
-            {
-                try
-                {
-                    conn.setAutoCommit(true);
-                } catch (SQLException ex)
-                {
-                    logger.log(Level.SEVERE, "Error when switching autocommit mode back to true", ex);
-                }
-                try
-                {
-                    conn.close();
-                } catch (SQLException ex)
-                {
-                    logger.log(Level.SEVERE, "Error when closing connection", ex);
-                }
-            }
         }
     }
 
     @Override
     public void removeContact(Contact contact) throws IllegalArgumentException
     {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        validateContact(contact);
+
+        if (contact.getId() == null)
+        {
+            throw new IllegalEntityException("contact id is null");
+        }
+
+        try
+        {
+            switch(contact.getType())
+            {
+                case MAIL:
+                    removeContactFromTypeTable(contact, "mailcontact");
+                    break;
+                case PHONE:
+                    removeContactFromTypeTable(contact, "phonecontact");
+                    break;
+            }
+            
+            removeContactFromGeneralTable(contact);
+        } catch (SQLException e)
+        {
+            String msg = "Error when removing contact from the db";
+            logger.log(Level.SEVERE, msg, e);
+            throw new ServiceFailureException(msg, e);
+        }
     }
 
     @Override
     public Contact getContact(Long id) throws IllegalArgumentException
     {
-        validate(id);
+        validateId(id);
 
         PreparedStatement st = null;
         PreparedStatement st2 = null;
@@ -247,8 +259,6 @@ public class ContactManagerImpl implements ContactManager
                 {
                     contact = resultSetToContact(rsContact, rsType);
 
-                    System.out.println(contact.getType());////////
-                        
                     if (rsType.next())
                     {
                         throw new ServiceFailureException(
@@ -300,7 +310,7 @@ public class ContactManagerImpl implements ContactManager
      throw new IllegalStateException("DataSource is not set");
      }
      }*/
-    private static void validate(Contact contact)
+    private static void validateContact(Contact contact)
     {
         if (contact == null)
         {
@@ -332,9 +342,9 @@ public class ContactManagerImpl implements ContactManager
                 ((MailContact) contact).setMailAddress(rsType.getString("mailaddress"));
                 break;
             case PHONE:
-                contact = new MailContact();
-                contact.setType(ContactType.MAIL);
-                //((PhoneContact) contact).setPhoneNumber(rsType.getString("phonenumber"));
+                contact = new PhoneContact();
+                contact.setType(ContactType.PHONE);
+                ((PhoneContact) contact).setPhoneNumber(rsType.getString("phonenumber"));
                 break;
         }
         contact.setId(rsContact.getLong("id"));
@@ -342,7 +352,7 @@ public class ContactManagerImpl implements ContactManager
         return contact;
     }
 
-    private void validate(Long id)
+    private void validateId(Long id)
     {
         if (id == null)
         {
@@ -352,6 +362,40 @@ public class ContactManagerImpl implements ContactManager
         if (id <= 0)
         {
             throw new IllegalArgumentException("contact id is out of range");
+        }
+    }
+
+    private void removeContactFromGeneralTable(Contact contact) throws SQLException
+    {
+        String sql = "DELETE FROM contact WHERE id = ?";
+        
+        try (PreparedStatement st = conn.prepareStatement(sql))
+        {
+            st.setLong(1, contact.getId());
+            int removed = st.executeUpdate();
+
+            if (removed != 1)
+            {
+                throw new ServiceFailureException("Internal Error: More rows "
+                        + "deleted when trying to delete contact " + contact);
+            }
+        }
+    }
+    
+    private void removeContactFromTypeTable(Contact contact, String table) throws SQLException
+    {
+        String sql = "DELETE FROM " + table + " WHERE contactid = ?";
+        
+        try (PreparedStatement st = conn.prepareStatement(sql))
+        {
+            st.setLong(1, contact.getId());
+            int removed = st.executeUpdate();
+
+            if (removed != 1)
+            {
+                throw new ServiceFailureException("Internal Error: More rows "
+                        + "deleted when trying to delete contact " + contact);
+            }
         }
     }
 }
