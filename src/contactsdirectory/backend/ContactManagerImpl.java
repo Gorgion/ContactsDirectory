@@ -23,16 +23,27 @@ public class ContactManagerImpl implements ContactManager
     private static final Logger logger = Logger.getLogger(ContactManagerImpl.class.getName());
 
     private Connection conn;
-
+    private DataSource dataSource;
+    
     public ContactManagerImpl(Connection conn)
     {
         this.conn = conn;
     }
 
+    public ContactManagerImpl()
+    {
+        
+    }
+    
+    public void setDataSource(DataSource ds)
+    {
+        dataSource = ds;
+    }
+    
     @Override
     public void createContact(Contact contact) throws IllegalArgumentException
     {
-        //checkDataSource();
+        checkDataSource();
         validateContact(contact);
 
         if (contact.getId() != null)
@@ -41,9 +52,9 @@ public class ContactManagerImpl implements ContactManager
         }
 
         //Connection conn = null;
-        PreparedStatement st = null;
+        //PreparedStatement st = null;
         PreparedStatement st2 = null;
-        try
+        try(PreparedStatement st)
         {
             //conn = dataSource.getConnection();
 
@@ -304,12 +315,12 @@ public class ContactManagerImpl implements ContactManager
         }
     }
 
-    /*private void checkDataSource() 
+    private void checkDataSource() 
      {
      if (dataSource == null) {
      throw new IllegalStateException("DataSource is not set");
      }
-     }*/
+     }
     private static void validateContact(Contact contact)
     {
         if (contact == null)
