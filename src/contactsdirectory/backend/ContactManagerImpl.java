@@ -22,24 +22,14 @@ public class ContactManagerImpl implements ContactManager
 
     private static final Logger logger = Logger.getLogger(ContactManagerImpl.class.getName());
 
-    private Connection conn;
+    //private Connection conn;
     private DataSource dataSource;
-    
-    public ContactManagerImpl(Connection conn)
-    {
-        this.conn = conn;
-    }
 
-    public ContactManagerImpl()
-    {
-        
-    }
-    
     public void setDataSource(DataSource ds)
     {
         dataSource = ds;
     }
-    
+
     @Override
     public void createContact(Contact contact) throws IllegalArgumentException
     {
@@ -53,112 +43,82 @@ public class ContactManagerImpl implements ContactManager
 
         //Connection conn = null;
         //PreparedStatement st = null;
-        PreparedStatement st2 = null;
-        try(PreparedStatement st)
+        //PreparedStatement st2 = null;
+        try (Connection conn = dataSource.getConnection())//(PreparedStatement st)
         {
-            //conn = dataSource.getConnection();
-
             //conn.setAutoCommit(false);
-            st = conn.prepareStatement(
-                    "INSERT INTO Contact (type,note) VALUES (?,?)",
-                    Statement.RETURN_GENERATED_KEYS);
-            st.setInt(1, DBUtilities.contactTypeToInt(contact.getType()));
-            st.setString(2, contact.getNote());
+            Long id;
+            int addedRows;
 
-            int addedRows = st.executeUpdate();
-            if (addedRows != 1)
+            try (PreparedStatement st = conn.prepareStatement("INSERT INTO Contact (type,note) VALUES (?,?)",
+                    Statement.RETURN_GENERATED_KEYS);)
             {
-                throw new ServiceFailureException("Internal Error: More rows "
-                        + "inserted when trying to insert contact " + contact);
-            }
+                st.setInt(1, DBUtilities.contactTypeToInt(contact.getType()));
+                st.setString(2, contact.getNote());
 
-            Long id = DBUtilities.getId(st.getGeneratedKeys());
-            contact.setId(id);
+                addedRows = st.executeUpdate();
+                if (addedRows != 1)
+                {
+                    //conn.setAutoCommit(true);
+                    throw new ServiceFailureException("Internal Error: More rows "
+                            + "inserted when trying to insert contact " + contact);
+                }
+
+                id = DBUtilities.getId(st.getGeneratedKeys());
+                contact.setId(id);
+            }
 
             switch (contact.getType())
             {
                 case MAIL:
-                    st2 = conn.prepareStatement("INSERT INTO mailcontact (contactid, mailaddress) VALUES (?,?)",
-                            Statement.RETURN_GENERATED_KEYS);
-                    st2.setLong(1, id);
-                    st2.setString(2, ((MailContact) contact).getMailAddress());
+                    try (PreparedStatement st = conn.prepareStatement("INSERT INTO mailcontact (contactid, mailaddress) VALUES (?,?)",
+                            Statement.RETURN_GENERATED_KEYS);)
+                    {
+                        st.setLong(1, id);
+                        st.setString(2, ((MailContact) contact).getMailAddress());
+                        addedRows = st.executeUpdate();
+                    }
                     break;
                 case PHONE:
-                    st2 = conn.prepareStatement("INSERT INTO phonecontact (contactid, phonenumber) VALUES (?,?)",
-                            Statement.RETURN_GENERATED_KEYS);
-                    st2.setLong(1, id);
-                    st2.setString(2, ((PhoneContact) contact).getPhoneNumber());
+                    try (PreparedStatement st = conn.prepareStatement("INSERT INTO phonecontact (contactid, phonenumber) VALUES (?,?)",
+                            Statement.RETURN_GENERATED_KEYS);)
+                    {
+                        st.setLong(1, id);
+                        st.setString(2, ((PhoneContact) contact).getPhoneNumber());
+                        addedRows = st.executeUpdate();
+                    }
                     break;
             }
-            addedRows = st2.executeUpdate();
+
             if (addedRows != 1)
             {
+                //conn.setAutoCommit(true);
                 throw new ServiceFailureException("Internal Error: More rows "
                         + "inserted when trying to insert typed contact" + contact);
             }
 
             //conn.commit();
+            //conn.setAutoCommit(true);            
         } catch (SQLException e)
         {
             String msg = "Error when inserting contact into db";
             logger.log(Level.SEVERE, msg, e);
             throw new ServiceFailureException(msg, e);
-        } finally
-        {
-            if (st != null)
-            {
-                try
-                {
-                    //conn.setAutoCommit(true);
-                    st.close();
-                } catch (SQLException e)
-                {
-                    logger.log(Level.SEVERE, null, e);
-                }
-            }
-
-            if (st2 != null)
-            {
-                try
-                {
-                    //conn.setAutoCommit(true);
-                    st2.close();
-                } catch (SQLException e)
-                {
-                    logger.log(Level.SEVERE, null, e);
-                }
-            }
-
-            if (conn != null)
-            {
-                /*try {
-                 conn.setAutoCommit(true);
-                 } catch (SQLException e) {
-                 logger.log(Level.SEVERE, "Error when switching autocommit mode back to true", e);
-                 }*/
-                /*try {
-                 //conn.close();
-                 } catch (SQLException e) {
-                 logger.log(Level.SEVERE, "Error when closing connection", e);
-                 }*/
-            }
         }
     }
 
     @Override
     public void editContact(Contact contact) throws IllegalArgumentException
     {
-        //checkDataSource();
+        checkDataSource();
         validateContact(contact);
         if (contact.getId() == null)
         {
             throw new IllegalEntityException("contact id is null");
         }
 
-        try
+        try (Connection conn = dataSource.getConnection())
         {
-            //conn = dataSource.getConnection();
-
             //conn.setAutoCommit(false);
             try (PreparedStatement st = conn.prepareStatement("SELECT type FROM contact WHERE id = ?"))
             {
@@ -206,6 +166,7 @@ public class ContactManagerImpl implements ContactManager
     @Override
     public void removeContact(Contact contact) throws IllegalArgumentException
     {
+        checkDataSource();
         validateContact(contact);
 
         if (contact.getId() == null)
@@ -213,9 +174,9 @@ public class ContactManagerImpl implements ContactManager
             throw new IllegalEntityException("contact id is null");
         }
 
-        try
+        try// (Connection conn = dataSource.getConnection())
         {
-            switch(contact.getType())
+            switch (contact.getType())
             {
                 case MAIL:
                     removeContactFromTypeTable(contact, "mailcontact");
@@ -224,7 +185,7 @@ public class ContactManagerImpl implements ContactManager
                     removeContactFromTypeTable(contact, "phonecontact");
                     break;
             }
-            
+
             removeContactFromGeneralTable(contact);
         } catch (SQLException e)
         {
@@ -237,90 +198,81 @@ public class ContactManagerImpl implements ContactManager
     @Override
     public Contact getContact(Long id) throws IllegalArgumentException
     {
+        checkDataSource();
         validateId(id);
 
-        PreparedStatement st = null;
-        PreparedStatement st2 = null;
+        //PreparedStatement st = null;
+        //PreparedStatement st2 = null;
         Contact contact = null;
-        try
+        try (Connection conn = dataSource.getConnection())
         {
-            st = conn.prepareStatement(
-                    "SELECT id, type, note FROM contact WHERE id = ?");
-            st.setLong(1, id);
-            ResultSet rsContact = st.executeQuery();
 
-            if (rsContact.next())
+            try (PreparedStatement st = conn.prepareStatement(
+                    "SELECT id, type, note FROM contact WHERE id = ?");)
             {
-                switch (DBUtilities.intToContactType(rsContact.getInt("type")))
+                st.setLong(1, id);
+                try (ResultSet rsContact = st.executeQuery();)
                 {
-                    case MAIL:
-                        st2 = conn.prepareStatement(
-                                "SELECT mailaddress FROM MAILCONTACT WHERE contactid = ?");
-                        st2.setLong(1, id);
-                        break;
-                    case PHONE:
-                        st2 = conn.prepareStatement(
-                                "SELECT phonenumber FROM phonecontact WHERE contactid = ?");
-                        st2.setLong(1, id);
-                        break;
-                }
-                ResultSet rsType = st2.executeQuery();
-
-                if (rsType.next())
-                {
-                    contact = resultSetToContact(rsContact, rsType);
-
-                    if (rsType.next())
+                    if (rsContact.next())
                     {
-                        throw new ServiceFailureException(
-                                "Internal error: More entities with the same id found "
-                                + "(source id: " + id + ", found " + contact + " and " + resultSetToContact(rsContact, rsType));
+                        String sql = null;
+                        switch (DBUtilities.intToContactType(rsContact.getInt("type")))
+                        {
+                            case MAIL:
+                                //st2 = conn.prepareStatement(
+                                sql = "SELECT mailaddress FROM MAILCONTACT WHERE contactid = ?";
+                                //st2.setLong(1, id);
+                                break;
+                            case PHONE:
+                                //st2 = conn.prepareStatement(
+                                sql = "SELECT phonenumber FROM phonecontact WHERE contactid = ?";
+                                //st2.setLong(1, id);
+                                break;
+                        }
+                        try (PreparedStatement st2 = conn.prepareStatement(sql);)
+                        {
+                            st2.setLong(1, id);
+                            try (ResultSet rsType = st2.executeQuery();)
+                            {
+                                if (rsType.next())
+                                {
+                                    contact = resultSetToContact(rsContact, rsType);
+
+                                    if (rsType.next())
+                                    {
+                                        throw new ServiceFailureException(
+                                                "Internal error: More entities with the same id found "
+                                                + "(source id: " + id + ", found " + contact + " and " + resultSetToContact(rsContact, rsType));
+                                    }
+                                }
+
+                                if (rsContact.next())
+                                {
+                                    throw new ServiceFailureException(
+                                            "Internal error: More entities with the same id found "
+                                            + "(source id: " + id + ", found " + contact + " and " + resultSetToContact(rsContact, rsType));
+                                }
+                            }
+                        }
                     }
-                }
-                if (rsContact.next())
-                {
-                    throw new ServiceFailureException(
-                            "Internal error: More entities with the same id found "
-                            + "(source id: " + id + ", found " + contact + " and " + resultSetToContact(rsContact, rsType));
                 }
             }
             return contact;
-
         } catch (SQLException ex)
         {
             throw new ServiceFailureException(
                     "Error when retrieving contact with id " + id, ex);
-        } finally
-        {
-            if (st != null)
-            {
-                try
-                {
-                    st.close();
-                } catch (SQLException ex)
-                {
-                    logger.log(Level.SEVERE, null, ex);
-                }
-            }
-            if (st2 != null)
-            {
-                try
-                {
-                    st2.close();
-                } catch (SQLException ex)
-                {
-                    logger.log(Level.SEVERE, null, ex);
-                }
-            }
         }
     }
 
-    private void checkDataSource() 
-     {
-     if (dataSource == null) {
-     throw new IllegalStateException("DataSource is not set");
-     }
-     }
+    private void checkDataSource()
+    {
+        if (dataSource == null)
+        {
+            throw new IllegalStateException("DataSource is not set");
+        }
+    }
+
     private static void validateContact(Contact contact)
     {
         if (contact == null)
@@ -379,34 +331,53 @@ public class ContactManagerImpl implements ContactManager
     private void removeContactFromGeneralTable(Contact contact) throws SQLException
     {
         String sql = "DELETE FROM contact WHERE id = ?";
-        
-        try (PreparedStatement st = conn.prepareStatement(sql))
-        {
-            st.setLong(1, contact.getId());
-            int removed = st.executeUpdate();
 
-            if (removed != 1)
+        try (Connection conn = dataSource.getConnection())
+        {
+            try (PreparedStatement st = conn.prepareStatement(sql))
             {
-                throw new ServiceFailureException("Internal Error: More rows "
-                        + "deleted when trying to delete contact " + contact);
+                st.setLong(1, contact.getId());
+                int removed = st.executeUpdate();
+
+                if (removed != 1)
+                {
+                    throw new ServiceFailureException("Internal Error: More rows "
+                            + "deleted when trying to delete contact " + contact);
+                }
             }
         }
     }
-    
+
     private void removeContactFromTypeTable(Contact contact, String table) throws SQLException
     {
+        validateTable(table);
         String sql = "DELETE FROM " + table + " WHERE contactid = ?";
-        
-        try (PreparedStatement st = conn.prepareStatement(sql))
-        {
-            st.setLong(1, contact.getId());
-            int removed = st.executeUpdate();
 
-            if (removed != 1)
+        try (Connection conn = dataSource.getConnection())
+        {
+            try (PreparedStatement st = conn.prepareStatement(sql))
             {
-                throw new ServiceFailureException("Internal Error: More rows "
-                        + "deleted when trying to delete contact " + contact);
+                st.setLong(1, contact.getId());
+                int removed = st.executeUpdate();
+
+                if (removed != 1)
+                {
+                    throw new ServiceFailureException("Internal Error: More rows "
+                            + "deleted when trying to delete contact " + contact);
+                }
             }
+        }
+    }
+
+    private void validateTable(String table) throws SQLException
+    {
+        switch(table)
+        {
+            case "phonecontact":
+            case "mailcontact":
+                return;
+            default:
+                throw new SQLException("Illegal table was selected for record deletion.");
         }
     }
 }
