@@ -4,6 +4,8 @@
  */
 package contactsdirectory.backend;
 
+import javax.sql.DataSource;
+
 /**
  *
  * @author Tomáš
@@ -13,4 +15,5 @@ public interface ContactManager {
     void editContact(Contact contact);
     void removeContact(Contact contact);
     Contact getContact(Long id);
+    void setDataSource(DataSource ds);
 }

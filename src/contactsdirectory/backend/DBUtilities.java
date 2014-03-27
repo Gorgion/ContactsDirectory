@@ -6,8 +6,11 @@
 
 package contactsdirectory.backend;
 
+import java.net.URL;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.sql.DataSource;
 
 /**
  *
@@ -56,4 +59,25 @@ public class DBUtilities
             default: return null;
         }
     }
+
+    /**
+     * Executes SQL script.
+     * 
+     * @param ds datasource
+     * @param scriptUrl url of sql script to be executed
+     * @throws SQLException when operation fails
+     */
+    /*public static void executeSqlScript(DataSource ds, URL scriptUrl) throws SQLException {
+        Connection conn = null;
+        try {
+            conn = ds.getConnection();
+            for (String sqlStatement : readSqlStatements(scriptUrl)) {
+                if (!sqlStatement.trim().isEmpty()) {
+                    conn.prepareStatement(sqlStatement).executeUpdate();
+                }
+            }
+        } finally {
+            closeQuietly(conn);
+        }
+    }*/
 }

@@ -24,7 +24,7 @@ public class ContactManagerImpl implements ContactManager
 
     //private Connection conn;
     private DataSource dataSource;
-
+    
     public void setDataSource(DataSource ds)
     {
         dataSource = ds;
@@ -151,7 +151,7 @@ public class ContactManagerImpl implements ContactManager
                 if (updated != 1)
                 {
                     throw new ServiceFailureException("Internal Error: More rows "
-                            + "inserted when trying to insert grave " + contact);
+                            + "inserted when trying to insert contact: " + contact);
                 }
             }
             //conn.commit();

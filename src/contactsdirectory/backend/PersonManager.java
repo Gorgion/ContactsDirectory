@@ -9,7 +9,7 @@ package contactsdirectory.backend;
  * @author Tomáš
  */
 public interface PersonManager {
-    Person createPerson(Person person);
+    void createPerson(Person person);
     void editPerson(Person person);
     void removePerson(Person person);
     Person findPersonById(Long id);    
