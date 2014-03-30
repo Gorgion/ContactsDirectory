@@ -1,7 +1,7 @@
 ----------------------------------------------------------------
-2014-03-27 11:28:09.622 GMT:
-Booting Derby version The Apache Software Foundation - Apache Derby - 10.6.2.1 - (999685): instance a816c00e-0145-034c-1710-000002e2bd38 
-on database directory memory:C:\Users\Tomáš\Documents\GitHub\ContactsDirectory\DirectoryManagerTest  with class loader sun.misc.Launcher$AppClassLoader@21346812 
+2014-03-30 14:20:43.719 GMT:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.6.2.1 - (999685): instance a816c00e-0145-135d-28c5-000002e2b7f8 
+on database directory memory:C:\Users\Tomáš\Documents\GitHub\ContactsDirectory\DirectoryManagerTest  with class loader sun.misc.Launcher$AppClassLoader@231bf785 
 Loaded from file:/C:/Users/Tom%c3%a1%c5%a1/Documents/GitHub/ContactsDirectory/lib/derby.jar
 java.vendor=Oracle Corporation
 java.runtime.version=1.7.0_51-b13
