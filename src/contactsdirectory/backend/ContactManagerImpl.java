@@ -24,7 +24,7 @@ public class ContactManagerImpl implements ContactManager
 
     //private Connection conn;
     private DataSource dataSource;
-    
+
     public void setDataSource(DataSource ds)
     {
         dataSource = ds;
@@ -41,12 +41,8 @@ public class ContactManagerImpl implements ContactManager
             throw new IllegalArgumentException("contact id is already set");
         }
 
-        //Connection conn = null;
-        //PreparedStatement st = null;
-        //PreparedStatement st2 = null;
         try (Connection conn = dataSource.getConnection())//(PreparedStatement st)
         {
-            //conn.setAutoCommit(false);
             Long id;
             int addedRows;
 
@@ -59,7 +55,6 @@ public class ContactManagerImpl implements ContactManager
                 addedRows = st.executeUpdate();
                 if (addedRows != 1)
                 {
-                    //conn.setAutoCommit(true);
                     throw new ServiceFailureException("Internal Error: More rows "
                             + "inserted when trying to insert contact " + contact);
                 }
@@ -76,7 +71,7 @@ public class ContactManagerImpl implements ContactManager
                     {
                         st.setLong(1, id);
                         st.setString(2, ((MailContact) contact).getMailAddress());
-                        addedRows = st.executeUpdate();
+                        addedRows = st.executeUpdate();                        
                     }
                     break;
                 case PHONE:
@@ -92,13 +87,9 @@ public class ContactManagerImpl implements ContactManager
 
             if (addedRows != 1)
             {
-                //conn.setAutoCommit(true);
                 throw new ServiceFailureException("Internal Error: More rows "
                         + "inserted when trying to insert typed contact" + contact);
-            }
-
-            //conn.commit();
-            //conn.setAutoCommit(true);            
+            } 
         } catch (SQLException e)
         {
             String msg = "Error when inserting contact into db";
@@ -119,7 +110,6 @@ public class ContactManagerImpl implements ContactManager
 
         try (Connection conn = dataSource.getConnection())
         {
-            //conn.setAutoCommit(false);
             try (PreparedStatement st = conn.prepareStatement("SELECT type FROM contact WHERE id = ?"))
             {
                 st.setLong(1, contact.getId());
@@ -142,6 +132,7 @@ public class ContactManagerImpl implements ContactManager
                     }
                 }
             }
+
             try (PreparedStatement st = conn.prepareStatement("UPDATE contact SET note = ? WHERE id = ?"))
             {
                 st.setString(1, contact.getNote());
@@ -154,7 +145,6 @@ public class ContactManagerImpl implements ContactManager
                             + "inserted when trying to insert contact: " + contact);
                 }
             }
-            //conn.commit();
         } catch (SQLException ex)
         {
             String msg = "Error when updating contact in the db";
@@ -201,8 +191,6 @@ public class ContactManagerImpl implements ContactManager
         checkDataSource();
         validateId(id);
 
-        //PreparedStatement st = null;
-        //PreparedStatement st2 = null;
         Contact contact = null;
         try (Connection conn = dataSource.getConnection())
         {
@@ -371,7 +359,7 @@ public class ContactManagerImpl implements ContactManager
 
     private void validateTable(String table) throws SQLException
     {
-        switch(table)
+        switch (table)
         {
             case "phonecontact":
             case "mailcontact":
